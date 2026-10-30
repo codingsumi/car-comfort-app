@@ -1,0 +1,13 @@
+# Local environment files may contain API credentials.
+**/.env
+**/.env.*
+!**/.env.example
+
+# Local tool and build output.
+**/.dart_tool/
+**/build/
+
+# Generated Firebase client configuration (keep local copies only).
+**/google-services.json
+**/GoogleService-Info.plist
+**/firebase_options.dart

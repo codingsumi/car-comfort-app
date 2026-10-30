@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html>
+<head>
+
+  <!--
+    If you are serving your web app in a path other than the root, change the
+    href value below to reflect the base path you are serving from.
+
+    The path provided below has to start and end with a slash "/" in order for
+    it to work correctly.
+
+    For more details:
+    * https://developer.mozilla.org/en-US/docs/Web/HTML/Element/base
+
+    This is a placeholder for base href that will be replaced by the value of
+    the `--base-href` argument provided to `flutter build`.
+  -->
+  <base href="$FLUTTER_BASE_HREF">
+
+  <meta charset="UTF-8">
+  <meta content="IE=Edge" http-equiv="X-UA-Compatible">
+  <meta name="description" content="Book mobile car wash and EV charging services with Car Comfort.">
+
+  <!-- iOS meta tags & icons -->
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="Car Comfort">
+  <link rel="apple-touch-icon" href="icons/Icon-192.png">
+
+  <!-- Favicon -->
+  <link rel="icon" type="image/png" href="favicon.png"/>
+
+  <title>Car Comfort</title>
+  <meta name="google-signin-client_id" content="846539386538-93rbe9hnt8487qq6o1nraqrsph4ss95b.apps.googleusercontent.com">
+  <link href="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.css" rel="stylesheet">
+  <link rel="manifest" href="manifest.json">
+  <style>
+    .mapboxgl-ctrl-geolocate {
+      display: none !important;
+    }
+    .cc-live-driver-marker {
+      width: 42px;
+      height: 42px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #ffffff;
+      background: #c4101f;
+      border: 3px solid #ffffff;
+      border-radius: 50%;
+      box-shadow: 0 3px 10px rgba(0, 0, 0, 0.35);
+      font-size: 23px;
+      line-height: 1;
+    }
+    .cc-live-driver-marker span {
+      display: block;
+      transform: rotate(-45deg);
+    }
+  </style>
+</head>
+<body>
+  <script src="https://api.mapbox.com/mapbox-gl-js/v3.15.0/mapbox-gl.js"></script>
+  <script src="https://js.stripe.com/v3/"></script>
+  <script>
+    window.carComfortMapbox = {
+      map: null,
+      geolocate: null,
+      liveDriverMarker: null,
+      liveDestinationMarker: null,
+      pendingLiveDriver: null,
+      pendingLiveDestination: null,
+      pendingLiveRoute: null,
+      pendingLiveFit: null,
+      create: function (container, token) {
+        var element = typeof container === 'string' ? document.getElementById(container) : container;
+        if (!element || !window.mapboxgl || !token) return;
+        mapboxgl.accessToken = token;
+        var map = new mapboxgl.Map({
+          container: element,
+          style: 'mapbox://styles/mapbox/streets-v12',
+          center: [-98.5795, 39.8283],
+          zoom: 3.2,
+          attributionControl: true
+        });
+
+        if (window.ResizeObserver) {
+          var ro = new ResizeObserver(function() {
+            map.resize();
+          });
+          ro.observe(element);
+        }
+
+        map.addControl(new mapboxgl.NavigationControl(), 'top-right');
+
+        // Add user geolocation control
+        var geolocate = new mapboxgl.GeolocateControl({
+          positionOptions: {
+            enableHighAccuracy: true
+          },
+          trackUserLocation: true,
+          showUserHeading: true
+        });
+        map.addControl(geolocate, 'top-right');
+        this.geolocate = geolocate;
+
+        // Automatically center and show user puck on load
+        var bridge = this;
+        map.on('load', function() {
+          setTimeout(function() {
+            if (!bridge.pendingLiveDriver) {
+              geolocate.trigger();
+            }
+          }, 300);
+          bridge.applyPendingLiveTrip();
+        });
+
+        this.map = map;
+      },
+      flyTo: function (lng, lat, zoom) {
+        if (this.map) {
+          this.map.flyTo({
+            center: [lng, lat],
+            zoom: zoom || 15.0
+          });
+        }
+      },
+      locate: function () {
+        if (this.geolocate) {
+          this.geolocate.trigger();
+        }
+      },
+      panBy: function (dx, dy) {
+        if (this.map) {
+          // Mapbox's panBy describes the camera offset; invert the finger
+          // movement so the map follows the user's drag naturally.
+          this.map.panBy([-dx, -dy], {duration: 0});
+        }
+      },
+      zoomBy: function (delta) {
+        if (this.map && Number.isFinite(delta)) {
+          this.map.zoomTo(this.map.getZoom() + delta, {duration: 120});
+        }
+      },
+      applyPendingLiveTrip: function () {
+        if (this.pendingLiveRoute) {
+          this.setLiveRoute(this.pendingLiveRoute);
+        }
+        if (this.pendingLiveDestination) {
+          this.setLiveDestination(
+            this.pendingLiveDestination.lng,
+            this.pendingLiveDestination.lat,
+            this.pendingLiveDestination.kind
+          );
+        }
+        if (this.pendingLiveDriver) {
+          this.setLiveDriver(
+            this.pendingLiveDriver.lng,
+            this.pendingLiveDriver.lat,
+            this.pendingLiveDriver.zoom,
+            this.pendingLiveDriver.follow
+          );
+        }
+        if (this.pendingLiveFit) {
+          this.fitLiveTrip(
+            this.pendingLiveFit.driverLng,
+            this.pendingLiveFit.driverLat,
+            this.pendingLiveFit.destinationLng,
+            this.pendingLiveFit.destinationLat,
+            this.pendingLiveFit.zoomBoost,
+            this.pendingLiveFit.maxZoom
+          );
+        }
+      },
+      setLiveDriver: function (lng, lat, zoom, follow) {
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+        this.pendingLiveDriver = {
+          lng: lng,
+          lat: lat,
+          zoom: zoom || 15.75,
+          follow: !!follow
+        };
+        if (!this.map || !this.map.loaded()) return;
+        if (!this.liveDriverMarker) {
+          var element = document.createElement('div');
+          element.className = 'cc-live-driver-marker';
+          element.setAttribute('aria-label', 'Live service provider location');
+          element.innerHTML = '<span>➤</span>';
+          this.liveDriverMarker = new mapboxgl.Marker({
+            element: element,
+            anchor: 'center'
+          });
+        }
+        this.liveDriverMarker.setLngLat([lng, lat]).addTo(this.map);
+        if (follow) {
+          this.map.easeTo({
+            center: [lng, lat],
+            zoom: Math.max(this.map.getZoom(), zoom || 15.75),
+            duration: 850
+          });
+        }
+      },
+      setLiveDestination: function (lng, lat, kind) {
+        if (!Number.isFinite(lng) || !Number.isFinite(lat)) return;
+        this.pendingLiveDestination = {lng: lng, lat: lat, kind: kind || 'pickup'};
+        if (!this.map || !this.map.loaded()) return;
+        if (!this.liveDestinationMarker) {
+          this.liveDestinationMarker = new mapboxgl.Marker({color: '#111214'});
+        }
+        this.liveDestinationMarker.setLngLat([lng, lat]).addTo(this.map);
+        var element = this.liveDestinationMarker.getElement();
+        element.setAttribute(
+          'aria-label',
+          kind === 'service' ? 'Service location' : 'Customer location'
+        );
+      },
+      setLiveRoute: function (flatCoordinates) {
+        if (!flatCoordinates || flatCoordinates.length < 4) return;
+        this.pendingLiveRoute = Array.prototype.slice.call(flatCoordinates);
+        if (!this.map || !this.map.loaded()) return;
+        var coordinates = [];
+        for (var i = 0; i + 1 < flatCoordinates.length; i += 2) {
+          coordinates.push([flatCoordinates[i], flatCoordinates[i + 1]]);
+        }
+        var data = {
+          type: 'Feature',
+          properties: {},
+          geometry: {type: 'LineString', coordinates: coordinates}
+        };
+        var source = this.map.getSource('cc-live-route');
+        if (source) {
+          source.setData(data);
+        } else {
+          this.map.addSource('cc-live-route', {type: 'geojson', data: data});
+          this.map.addLayer({
+            id: 'cc-live-route-line',
+            type: 'line',
+            source: 'cc-live-route',
+            layout: {'line-cap': 'round', 'line-join': 'round'},
+            paint: {
+              'line-color': '#34b620',
+              'line-width': 7,
+              'line-opacity': 1
+            }
+          });
+        }
+      },
+      clearLiveRoute: function () {
+        this.pendingLiveRoute = null;
+        if (this.map && this.map.loaded()) {
+          if (this.map.getLayer('cc-live-route-line')) {
+            this.map.removeLayer('cc-live-route-line');
+          }
+          if (this.map.getSource('cc-live-route')) {
+            this.map.removeSource('cc-live-route');
+          }
+        }
+      },
+      fitLiveTrip: function (driverLng, driverLat, destinationLng, destinationLat, zoomBoost, maxZoom) {
+        this.pendingLiveFit = {
+          driverLng: driverLng,
+          driverLat: driverLat,
+          destinationLng: destinationLng,
+          destinationLat: destinationLat,
+          zoomBoost: zoomBoost,
+          maxZoom: maxZoom
+        };
+        if (!this.map || !this.map.loaded()) return;
+        var bounds = new mapboxgl.LngLatBounds();
+        bounds.extend([driverLng, driverLat]);
+        bounds.extend([destinationLng, destinationLat]);
+        var map = this.map;
+        map.fitBounds(bounds, {
+          padding: {top: 120, right: 48, bottom: 220, left: 48},
+          duration: 700,
+          maxZoom: maxZoom || 16.5
+        });
+        map.once('moveend', function () {
+          var closerZoom = Math.min(
+            map.getZoom() + (zoomBoost || 0.65),
+            maxZoom || 16.5
+          );
+          map.easeTo({zoom: closerZoom, duration: 250});
+        });
+      },
+      clearLiveTrip: function () {
+        this.pendingLiveDriver = null;
+        this.pendingLiveDestination = null;
+        this.pendingLiveRoute = null;
+        this.pendingLiveFit = null;
+        if (this.liveDriverMarker) {
+          this.liveDriverMarker.remove();
+          this.liveDriverMarker = null;
+        }
+        if (this.liveDestinationMarker) {
+          this.liveDestinationMarker.remove();
+          this.liveDestinationMarker = null;
+        }
+        this.clearLiveRoute();
+      },
+      easeTo: function (lng, lat, zoom) {
+        if (this.map) {
+          this.map.easeTo({
+            center: [lng, lat],
+            zoom: zoom || 15.0
+          });
+        }
+      }
+    };
+    window.carComfortStripe = {
+      stripe: null,
+      elements: null,
+      card: null,
+      mountCardFields: function (numberElement, expiryElement, cvcElement, publishableKey) {
+        console.log('Stripe mountCardFields called with key:', publishableKey);
+        if (!window.Stripe) {
+          console.error('Stripe.js is not loaded on window.');
+          throw new Error('Stripe.js is not loaded.');
+        }
+        this.stripe = window.Stripe(publishableKey);
+        this.elements = this.stripe.elements();
+        var style = {
+          base: {
+            color: '#1B1B1F',
+            fontFamily: 'Inter, Arial, sans-serif',
+            fontSize: '16px',
+            '::placeholder': { color: '#6B7280' }
+          },
+          invalid: { color: '#C4101F' }
+        };
+        this.cardNumber = this.elements.create('cardNumber', {
+          style: style,
+          placeholder: '1234 1234 1234 1234'
+        });
+        this.cardExpiry = this.elements.create('cardExpiry', {
+          style: style,
+          placeholder: 'MM / YY'
+        });
+        this.cardCvc = this.elements.create('cardCvc', {
+          style: style,
+          placeholder: 'CVC'
+        });
+        this.card = this.cardNumber;
+
+        var self = this;
+        var retryCount = 0;
+        function tryMount() {
+          if (numberElement.isConnected && expiryElement.isConnected && cvcElement.isConnected) {
+            try {
+              self.cardNumber.mount(numberElement);
+              self.cardExpiry.mount(expiryElement);
+              self.cardCvc.mount(cvcElement);
+              console.log('Stripe card fields mounted successfully!');
+            } catch (err) {
+              console.error('Error mounting Stripe fields:', err);
+            }
+          } else {
+            retryCount++;
+            if (retryCount < 100) {
+              setTimeout(tryMount, 50);
+            } else {
+              console.error('Stripe elements did not connect to DOM within timeout.');
+            }
+          }
+        }
+        tryMount();
+
+        // Dynamically toggle flt-glass-pane pointer-events to allow inputs to bypass Flutter canvas
+        var glassPane = document.querySelector('flt-glass-pane');
+        
+        function disableFlutterPointer() {
+          if (glassPane) {
+            glassPane.style.pointerEvents = 'none';
+          }
+        }
+
+        function enableFlutterPointer() {
+          if (glassPane) {
+            glassPane.style.pointerEvents = 'auto';
+          }
+        }
+
+        if (glassPane) {
+          // The three Stripe fields share one Flutter platform-view root.
+          // Track the root instead of individual fields so moving from card
+          // number to expiry/CVV does not re-enable the glass pane between
+          // fields and swallow the next click.
+          var cardRoot = numberElement.parentElement &&
+              numberElement.parentElement.parentElement;
+          if (cardRoot) {
+            cardRoot.addEventListener('mouseenter', disableFlutterPointer);
+            cardRoot.addEventListener('mouseleave', enableFlutterPointer);
+
+            function isInsideCardRoot(event) {
+              var target = event.target;
+              return target && cardRoot.contains(target);
+            }
+
+            // Restore Flutter input before a click outside the Stripe fields
+            // reaches the Flutter canvas (for example, Card Name or Save).
+            window.addEventListener('pointermove', function(e) {
+              if (isInsideCardRoot(e)) {
+                disableFlutterPointer();
+              } else {
+                enableFlutterPointer();
+              }
+            }, true);
+            window.addEventListener('pointerdown', function(e) {
+              if (!isInsideCardRoot(e)) enableFlutterPointer();
+            }, true);
+          }
+          numberElement.addEventListener('mouseenter', disableFlutterPointer);
+          expiryElement.addEventListener('mouseenter', disableFlutterPointer);
+          cvcElement.addEventListener('mouseenter', disableFlutterPointer);
+          numberElement.addEventListener('touchstart', disableFlutterPointer);
+          expiryElement.addEventListener('touchstart', disableFlutterPointer);
+          cvcElement.addEventListener('touchstart', disableFlutterPointer);
+
+        }
+
+        window.addEventListener('click', function(e) {
+          if (!numberElement.contains(e.target) && 
+              !expiryElement.contains(e.target) && 
+              !cvcElement.contains(e.target)) {
+            enableFlutterPointer();
+          }
+        }, true);
+
+        window.addEventListener('touchstart', function(e) {
+          if (!numberElement.contains(e.target) && 
+              !expiryElement.contains(e.target) && 
+              !cvcElement.contains(e.target)) {
+            enableFlutterPointer();
+          }
+        }, true);
+      },
+      createPaymentMethod: async function (cardholderName) {
+        if (!this.stripe || !this.card) throw new Error('Card field is not ready.');
+        return await this.stripe.createPaymentMethod({
+          type: 'card',
+          card: this.card,
+          billing_details: { name: cardholderName || undefined }
+        });
+      }
+    };
+  </script>
+  <script src="flutter_bootstrap.js" async></script>
+</body>
+</html>

@@ -1,0 +1,117 @@
+workflows:
+  ios-release:
+    name: Car Comfort iOS
+    max_build_duration: 90
+    environment:
+      groups:
+        - ios_signing
+      vars:
+        BUNDLE_ID: io.carcomfort.app
+        TEAM_ID: YQGQU3RV34
+      flutter: stable
+      xcode: latest
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: app_staging
+          include: true
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Set up code signing
+        script: |
+          keychain initialize
+
+          export CERTIFICATE_PRIVATE_KEY=$(cat /tmp/dist_signing.key 2>/dev/null || echo "")
+
+          app-store-connect fetch-signing-files $BUNDLE_ID \
+            --type IOS_APP_STORE \
+            --create -v
+
+          keychain add-certificates
+          xcode-project use-profiles
+
+      - name: Build iOS
+        script: |
+          flutter build ios --release --no-codesign
+
+          PROFILE_PATH=$(find ~ -name "*.mobileprovision" 2>/dev/null | head -1)
+          PROFILE_UUID=$(security cms -D -i "$PROFILE_PATH" | python3 -c \
+            "import sys,plistlib; d=plistlib.loads(sys.stdin.buffer.read()); print(d['UUID'])")
+
+          xcodebuild \
+            -workspace ios/Runner.xcworkspace \
+            -scheme Runner \
+            -configuration Release \
+            -archivePath $CM_BUILD_DIR/Runner.xcarchive \
+            -destination "generic/platform=iOS" \
+            DEVELOPMENT_TEAM="$TEAM_ID" \
+            CODE_SIGN_STYLE="Manual" \
+            CODE_SIGN_IDENTITY="Apple Distribution" \
+            PROVISIONING_PROFILE="$PROFILE_UUID" \
+            archive
+
+      - name: Export IPA
+        script: |
+          /usr/libexec/PlistBuddy -c "Set :method app-store-connect" \
+            /Users/builder/export_options.plist
+
+          xcodebuild \
+            -exportArchive \
+            -archivePath $CM_BUILD_DIR/Runner.xcarchive \
+            -exportOptionsPlist /Users/builder/export_options.plist \
+            -exportPath $CM_BUILD_DIR/ipa \
+            -allowProvisioningUpdates
+
+    artifacts:
+      - $CM_BUILD_DIR/ipa/*.ipa
+      - $CM_BUILD_DIR/Runner.xcarchive
+      - flutter_drive.log
+
+    publishing:
+      app_store_connect:
+        api_key: $APP_STORE_CONNECT_PRIVATE_KEY
+        key_id: $APP_STORE_CONNECT_KEY_IDENTIFIER
+        issuer_id: $APP_STORE_CONNECT_ISSUER_ID
+        submit_to_testflight: true
+        submit_to_app_store: false
+
+  android-release:
+    name: Car Comfort Android
+    max_build_duration: 60
+    environment:
+      groups:
+        - android_signing
+      vars:
+        CM_KEYSTORE_PATH: /home/builder/car_comfort.jks
+        CM_KEYSTORE_PASSWORD: "1234!@#$"
+        CM_KEY_ALIAS: key0
+        CM_KEY_PASSWORD: "1234!@#$"
+      flutter: stable
+    triggering:
+      events:
+        - push
+      branch_patterns:
+        - pattern: app_staging
+          include: true
+    scripts:
+      - name: Get Flutter packages
+        script: flutter pub get
+
+      - name: Set up Android keystore
+        script: |
+          echo $CM_KEYSTORE | base64 --decode > $CM_KEYSTORE_PATH
+
+      - name: Build Android APK
+        script: flutter build apk --release
+
+    artifacts:
+      - build/app/outputs/flutter-apk/app-release.apk
+
+    publishing:
+      google_play:
+        credentials: $GCLOUD_SERVICE_ACCOUNT_CREDENTIALS
+        track: internal
+        submit_as_draft: true

@@ -1,0 +1,10 @@
+#BASE_URL=http://localhost:3000/
+BASE_URL=https://node.carcomfort.betaplanets.com/
+ONESIGNAL_API_KEY=
+MAPBOX_ACCESS_TOKEN=
+MAPBOX_DOWNLOADS_TOKEN=
+GOOGLE_PLACES_API_KEY=
+STRIPE_PUBLISHABLE_KEY=
+STRIPE_SECRET_KEY=
+FIREBASE_DATABASE_URL=https://car-comfort-66653-default-rtdb.firebaseio.com
+STRIPE_APPLE_MERCHANT_IDENTIFIER=merchant.io.carcomfort.app

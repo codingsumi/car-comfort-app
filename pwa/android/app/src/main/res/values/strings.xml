@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="close_navigation">Close navigation</string>
+    <string name="recenter">Re-centre</string>
+    <string name="toggle_voice">Toggle voice guidance</string>
+    <string name="maneuver_icon">Turn direction</string>
+    <string name="then_label">Then</string>
+    <string name="eta_minutes">%1$d min</string>
+</resources>

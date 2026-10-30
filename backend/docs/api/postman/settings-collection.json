@@ -1,0 +1,325 @@
+{
+  "info": {
+    "name": "Car Comfort - App Settings API",
+    "description": "API collection for App Settings module",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{admin_token}}",
+        "type": "string"
+      }
+    ]
+  },
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:4001/api"
+    },
+    {
+      "key": "admin_token",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Settings",
+      "item": [
+        {
+          "name": "Get All Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings"]
+            }
+          }
+        },
+        {
+          "name": "Get General Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/general",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "general"]
+            }
+          }
+        },
+        {
+          "name": "Update General Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"app_name\": \"Car Comfort\",\n  \"support_email\": \"support@carcomfort.com\",\n  \"contact_number\": \"+1-800-000-0000\",\n  \"timezone\": \"America/New_York\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/general",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "general"]
+            }
+          }
+        },
+        {
+          "name": "Get Stripe Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/stripe",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "stripe"]
+            }
+          }
+        },
+        {
+          "name": "Update Stripe Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"stripe_publishable_key\": \"pk_test_...\",\n  \"stripe_secret_key\": \"sk_test_...\",\n  \"stripe_webhook_secret\": \"whsec_...\",\n  \"stripe_connected_account_enabled\": true,\n  \"stripe_payment_mode\": \"test\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/stripe",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "stripe"]
+            }
+          }
+        },
+        {
+          "name": "Get OneSignal Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/onesignal",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "onesignal"]
+            }
+          }
+        },
+        {
+          "name": "Update OneSignal Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"onesignal_app_id\": \"your-app-id\",\n  \"onesignal_rest_api_key\": \"your-rest-api-key\",\n  \"onesignal_user_auth_key\": \"your-auth-key\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/onesignal",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "onesignal"]
+            }
+          }
+        },
+        {
+          "name": "Get Email/SMTP Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/email",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "email"]
+            }
+          }
+        },
+        {
+          "name": "Update Email/SMTP Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"smtp_host\": \"smtp.gmail.com\",\n  \"smtp_port\": 587,\n  \"smtp_username\": \"user@gmail.com\",\n  \"smtp_password\": \"app-password\",\n  \"smtp_encryption\": \"tls\",\n  \"smtp_from_email\": \"noreply@carcomfort.com\",\n  \"smtp_from_name\": \"Car Comfort\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/email",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "email"]
+            }
+          }
+        },
+        {
+          "name": "Get Social Links",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/social_links",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "social_links"]
+            }
+          }
+        },
+        {
+          "name": "Update Social Links",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"social_facebook\": \"https://facebook.com/carcomfort\",\n  \"social_instagram\": \"https://instagram.com/carcomfort\",\n  \"social_youtube\": \"https://youtube.com/carcomfort\",\n  \"social_linkedin\": \"https://linkedin.com/company/carcomfort\",\n  \"social_twitter\": \"https://x.com/carcomfort\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/social_links",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "social_links"]
+            }
+          }
+        },
+        {
+          "name": "Get Finance Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/finance",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "finance"]
+            }
+          }
+        },
+        {
+          "name": "Update Finance Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"default_tax_percentage\": 8.5,\n  \"default_commission_percentage\": 15,\n  \"currency_symbol\": \"$\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/finance",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "finance"]
+            }
+          }
+        },
+        {
+          "name": "Get Theme Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/theme",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "theme"]
+            }
+          }
+        },
+        {
+          "name": "Update Theme Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"theme_primary_color\": \"#2563EB\",\n  \"theme_secondary_color\": \"#1E293B\",\n  \"theme_sidebar_style\": \"light\",\n  \"theme_dark_mode_enabled\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/theme",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "theme"]
+            }
+          }
+        },
+        {
+          "name": "Get Invoice Settings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/invoice",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "invoice"]
+            }
+          }
+        },
+        {
+          "name": "Update Invoice Settings",
+          "request": {
+            "method": "PUT",
+            "header": [
+              { "key": "Content-Type", "value": "application/json" }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"invoice_company_name\": \"Car Comfort LLC\",\n  \"invoice_gst_vat_number\": \"US123456789\",\n  \"invoice_email\": \"billing@carcomfort.com\",\n  \"invoice_phone\": \"+1-800-000-0000\",\n  \"invoice_address\": \"123 Main St, Suite 100, New York, NY 10001\",\n  \"invoice_footer_notes\": \"Thank you for your business!\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/invoice",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "invoice"]
+            }
+          }
+        },
+        {
+          "name": "Upload Settings File",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": ""
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/admin/settings/upload",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "upload"]
+            }
+          }
+        },
+        {
+          "name": "Get Audit Logs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/admin/settings/audit-logs?page=1&limit=20",
+              "host": ["{{base_url}}"],
+              "path": ["admin", "settings", "audit-logs"],
+              "query": [
+                { "key": "page", "value": "1" },
+                { "key": "limit", "value": "20" },
+                { "key": "group", "value": "", "disabled": true }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,56 @@
+{
+  "rules": {
+    "support_chats": {
+      "$ticketId": {
+        ".read": true,
+        "meta": {
+          ".read": true,
+          ".write": false
+        },
+        "messages": {
+          "$messageId": {
+            ".read": true,
+            ".write": "!root.child('support_chats').child($ticketId).child('meta').child('chatLocked').val()",
+            ".validate": "newData.hasChildren(['msg', 'timeStamp', 'type', 'senderId', 'receiverId']) && newData.child('type').val() == 'text' && newData.child('msg').isString() && newData.child('msg').val().length <= 4000"
+          }
+        },
+        "users": {
+          ".read": true,
+          ".write": "!root.child('support_chats').child($ticketId).child('meta').child('chatLocked').val()"
+        },
+        "presence": {
+          "$userId": {
+            ".read": true,
+            ".write": "!root.child('support_chats').child($ticketId).child('meta').child('chatLocked').val()"
+          }
+        }
+      }
+    },
+    "booking_chats": {
+      "$bookingId": {
+        ".read": true,
+        "meta": {
+          ".read": true,
+          ".write": false
+        },
+        "messages": {
+          "$messageId": {
+            ".read": true,
+            ".write": true,
+            ".validate": "newData.hasChildren(['msg', 'timeStamp', 'type', 'senderId', 'receiverId']) && newData.child('type').val() == 'text' && newData.child('msg').isString() && newData.child('msg').val().length <= 4000"
+          }
+        },
+        "users": {
+          ".read": true,
+          ".write": true
+        },
+        "presence": {
+          "$userId": {
+            ".read": true,
+            ".write": true
+          }
+        }
+      }
+    }
+  }
+}

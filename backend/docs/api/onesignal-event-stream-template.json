@@ -1,0 +1,14 @@
+{
+  "event.kind": "{{ event.kind }}",
+  "event.id": "{{ event.id }}",
+  "event.timestamp": "{{ event.timestamp }}",
+  "event.datetime": "{{ event.datetime }}",
+  "event.app_id": "{{ event.app_id }}",
+  "event.subscription_device_type": "{{ event.subscription_device_type }}",
+  "event.subscription_id": "{{ event.subscription_id }}",
+  "event.external_id": "{{ event.external_id }}",
+  "event.data.failure_reason": "{{ event.data.failure_reason }}",
+  "message.id": "{{ message.id }}",
+  "message.name": "{{ message.name }}",
+  "message.data": "{{ message.data }}"
+}

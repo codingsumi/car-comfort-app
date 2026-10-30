@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Stripe Card → payment_method_id</title>
+    <script src="https://js.stripe.com/v3/"></script>
+    <style>
+      body {
+        font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji",
+          "Segoe UI Emoji";
+        max-width: 720px;
+        margin: 40px auto;
+        padding: 0 16px;
+      }
+      .row {
+        margin: 12px 0;
+      }
+      label {
+        display: block;
+        font-weight: 600;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        font-size: 14px;
+      }
+      #card {
+        padding: 12px;
+        border: 1px solid #d0d7de;
+        border-radius: 8px;
+        background: #fff;
+      }
+      button {
+        padding: 10px 14px;
+        border: 0;
+        border-radius: 8px;
+        background: #111827;
+        color: white;
+        cursor: pointer;
+        font-weight: 600;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      pre {
+        background: #0b1020;
+        color: #e5e7eb;
+        padding: 12px;
+        border-radius: 8px;
+        overflow: auto;
+      }
+      .hint {
+        color: #4b5563;
+        font-size: 13px;
+      }
+      .error {
+        color: #b91c1c;
+        font-size: 13px;
+        white-space: pre-wrap;
+      }
+    </style>
+  </head>
+  <body>
+    <h2>Stripe test card → <code>payment_method_id</code></h2>
+    <p class="hint">
+      Put your <strong>Stripe publishable key</strong> (<code>pk_test_...</code>) below. Use test card
+      <code>4242 4242 4242 4242</code>, any future expiry, any CVC.
+    </p>
+
+    <div class="row">
+      <label for="pk">Publishable key</label>
+      <input id="pk" placeholder="pk_test_..." autocomplete="off" />
+    </div>
+
+    <div class="row">
+      <label>Card</label>
+      <div id="card"></div>
+    </div>
+
+    <div class="row">
+      <button id="save" disabled>Create payment_method_id</button>
+    </div>
+
+    <div id="err" class="error"></div>
+
+    <div class="row">
+      <label>Output</label>
+      <pre id="out">(payment_method_id will appear here)</pre>
+    </div>
+
+    <script>
+      const pkInput = document.querySelector("#pk");
+      const saveBtn = document.querySelector("#save");
+      const out = document.querySelector("#out");
+      const errBox = document.querySelector("#err");
+
+      let stripe = null;
+      let card = null;
+
+      function setError(msg) {
+        errBox.textContent = msg || "";
+      }
+
+      function setOutput(msg) {
+        out.textContent = msg || "";
+      }
+
+      function initStripe() {
+        const pk = (pkInput.value || "").trim();
+        if (!pk.startsWith("pk_")) {
+          stripe = null;
+          saveBtn.disabled = true;
+          setError("Enter a valid publishable key (pk_test_...).");
+          return;
+        }
+
+        setError("");
+        stripe = Stripe(pk);
+        const elements = stripe.elements();
+
+        if (card) {
+          try {
+            card.unmount();
+          } catch (_) {}
+        }
+
+        card = elements.create("card");
+        card.mount("#card");
+
+        saveBtn.disabled = false;
+      }
+
+      pkInput.addEventListener("input", () => {
+        // Debounce-ish: only init once a plausible key is typed.
+        const v = (pkInput.value || "").trim();
+        if (v.startsWith("pk_") && v.length > 10) initStripe();
+        else {
+          stripe = null;
+          saveBtn.disabled = true;
+          setError("");
+        }
+      });
+
+      saveBtn.addEventListener("click", async () => {
+        try {
+          setError("");
+          setOutput("Creating payment method...");
+          saveBtn.disabled = true;
+
+          if (!stripe || !card) throw new Error("Stripe not initialized. Enter your publishable key first.");
+
+          const { paymentMethod, error } = await stripe.createPaymentMethod({ type: "card", card });
+          if (error) throw error;
+
+          setOutput(JSON.stringify({ payment_method_id: paymentMethod.id }, null, 2));
+        } catch (e) {
+          setOutput("(payment_method_id will appear here)");
+          setError(e && e.message ? e.message : String(e));
+        } finally {
+          saveBtn.disabled = !stripe;
+        }
+      });
+    </script>
+  </body>
+</html>
+
